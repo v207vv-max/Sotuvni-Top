@@ -1,0 +1,33 @@
+# Виртуальное окружение
+.venv/
+venv/
+ENV/
+env/
+
+# Кэш Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller / Сборки
+build/
+dist/
+*.spec
+
+# Временные системные файлы Windows / Excel
+~$*.xlsx
+~$*.xls
+.DS_Store
+Thumbs.db
+
+# Конфиденциальные данные компании и клиентов (ОБЯЗАТЕЛЬНО К ИСКЛЮЧЕНИЮ)
+*.xlsx
+*.xls
+*.json
+*.csv
+daily_reports/
+!daily_reports/.gitkeep
+
+# Среда разработки
+.idea/
+.vscode/
