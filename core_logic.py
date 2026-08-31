@@ -65,8 +65,7 @@ def parse_tg_json_data(json_path):
             'Товар_ТГ': details
         })
 
-    df = pd.DataFrame(rows)
-    return df
+    return pd.DataFrame(rows)
 
 
 def extract_standard_fields(df, filename):
@@ -116,7 +115,8 @@ def extract_standard_fields(df, filename):
 
 
 def process_sales_data(tg_file, kpi_file, daily_folder, output_dir):
-    # 1. Читаем Telegram (поддержка JSON и Excel)
+    """Сверяет данные и формирует только один файл Yoqolgan_sotuvlar.xlsx"""
+    # 1. Читаем Telegram
     if tg_file.endswith('.json'):
         df_tg = parse_tg_json_data(tg_file)
         df_tg['phone_clean'] = df_tg['Номер_ТГ'].apply(normalize_phone)
@@ -125,7 +125,6 @@ def process_sales_data(tg_file, kpi_file, daily_folder, output_dir):
         phone_col = next((c for c in df_tg.columns if any(k in str(c).lower() for k in ['номер', 'телефон', 'phone'])),
                          df_tg.columns[1])
         df_tg['phone_clean'] = df_tg[phone_col].apply(normalize_phone)
-        # Переименуем для единообразия
         date_col = next((c for c in df_tg.columns if 'дата' in str(c).lower()), df_tg.columns[0])
         client_col = next((c for c in df_tg.columns if 'имя' in str(c).lower()), '—')
         product_col = next((c for c in df_tg.columns if 'товар' in str(c).lower()), '—')
@@ -141,7 +140,7 @@ def process_sales_data(tg_file, kpi_file, daily_folder, output_dir):
     for col in df_kpi_raw.columns:
         kpi_phones.update(df_kpi_raw[col].apply(normalize_phone).dropna().tolist())
 
-    # 3. Собираем Мега-базу
+    # 3. Собираем базу из ежедневных отчетов
     all_daily_rows = []
     for file in sorted(os.listdir(daily_folder)):
         if (file.endswith('.xlsx') or file.endswith('.xls')) and not file.startswith('~$'):
@@ -159,14 +158,8 @@ def process_sales_data(tg_file, kpi_file, daily_folder, output_dir):
     df_mega_base = pd.concat(all_daily_rows, ignore_index=True)
     df_mega_base = df_mega_base.drop_duplicates(subset=['phone_clean'])
 
-    # Сохраняем Файл 3: Мега-База
-    mega_file_path = os.path.join(output_dir, "3_Mega_Baza_Prodazh_Mesyats.xlsx")
-    df_mega_base.to_excel(mega_file_path, index=False)
-
     # 4. Выделяем лиды оператора, которых нет в KPI
     uncredited_tg = df_tg[~df_tg['phone_clean'].isin(kpi_phones)].copy()
-
-    # Файл 1: Прямые совпадения (100% доказанные потери)
     lost_auto = pd.merge(uncredited_tg, df_mega_base, on='phone_clean', how='inner')
 
     final_auto = pd.DataFrame()
@@ -181,29 +174,13 @@ def process_sales_data(tg_file, kpi_file, daily_folder, output_dir):
         final_auto['Склад'] = lost_auto['Склад']
         final_auto['Файл отчета'] = lost_auto['Файл_отчета']
 
-    auto_file_path = os.path.join(output_dir, "1_Poteryannye_Prodazhi_Avto.xlsx")
+    # 5. Сохраняем ТОЛЬКО файл Yoqolgan_sotuvlar.xlsx
+    auto_file_path = os.path.join(output_dir, "Yoqolgan_sotuvlar.xlsx")
     final_auto.to_excel(auto_file_path, index=False)
-
-    # Файл 2: Бланк для руководителя (не совпали по номеру, требуется проверка в Битрикс)
-    matched_phones = set(lost_auto['phone_clean']) if not lost_auto.empty else set()
-    unmatched_tg = uncredited_tg[~uncredited_tg['phone_clean'].isin(matched_phones)].copy()
-
-    final_manual = pd.DataFrame()
-    final_manual['Дата звонка в ТГ'] = unmatched_tg['Дата_ТГ']
-    final_manual['Номер в ТГ'] = "+998" + unmatched_tg['phone_clean']
-    final_manual['Имя клиента'] = unmatched_tg['Имя_ТГ']
-    final_manual['Интересовался товаром'] = unmatched_tg['Товар_ТГ']
-    final_manual['Статус проверки РОПа'] = ""  # Пустая колонка для руководителя
-    final_manual['Номер договора / филиал'] = ""  # Пустая колонка
-    final_manual['Комментарий'] = ""
-
-    manual_file_path = os.path.join(output_dir, "2_Na_Proverku_Rukovoditelyu.xlsx")
-    final_manual.to_excel(manual_file_path, index=False)
 
     return {
         'tg_total': len(df_tg),
         'kpi_total': len(kpi_phones),
         'mega_base_total': len(df_mega_base),
-        'auto_found': len(final_auto),
-        'manual_candidates': len(final_manual)
+        'auto_found': len(final_auto)
     }

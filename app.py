@@ -123,10 +123,9 @@ TRANSLATIONS = {
         "warn_title": "Diqqat",
         "warn_text": "Iltimos, barcha fayllarni va papkalarni tanlang!",
         "card_auto": "100% Topilgan sotuvlar",
-        "card_manual": "Rahbarga tekshiruvga",
         "card_total": "Kompaniya bazasi",
         "success_title": "Muvaffaqiyatli!",
-        "success_text": "Tekshiruv yakunlandi!\n\nTopilgan sotuvlar: {auto} ta\nTekshiruvga nomzodlar: {manual} ta"
+        "success_text": "Tekshiruv yakunlandi!\n\nTopilgan sotuvlar: {auto} ta\nFayl: Yoqolgan_sotuvlar.xlsx"
     },
     "RU": {
         "title": "Контроль продаж | ASKO",
@@ -144,10 +143,9 @@ TRANSLATIONS = {
         "warn_title": "Внимание",
         "warn_text": "Пожалуйста, укажите все файлы и папки!",
         "card_auto": "100% Подтверждено",
-        "card_manual": "Кандидатов РОПу",
         "card_total": "Продаж в базе",
         "success_title": "Успешно!",
-        "success_text": "Сверка завершена!\n\nНайдено потерь: {auto}\nКандидатов на проверку: {manual}"
+        "success_text": "Сверка завершена!\n\nНайдено потерь: {auto}\nФайл: Yoqolgan_sotuvlar.xlsx"
     }
 }
 
@@ -160,13 +158,12 @@ class SalesCheckerApp(ctk.CTk):
         super().__init__()
 
         self.current_lang = "UZ"
-        self.geometry("640x700")
+        self.geometry("640x660")
         self.resizable(False, False)
 
         self.tg_path = ""
         self.kpi_path = ""
         self.daily_folder_path = ""
-        # По умолчанию ставим Рабочий стол пользователя
         self.save_folder_path = os.path.join(os.path.expanduser("~"), "Desktop")
 
         # Переключатель языка
@@ -218,9 +215,12 @@ class SalesCheckerApp(ctk.CTk):
         self.frame_save.pack(fill="x", padx=25, pady=4)
         self.btn_save = ctk.CTkButton(self.frame_save, width=220, command=self.select_save_folder)
         self.btn_save.pack(side="left", padx=10, pady=8)
-        self.lbl_save = ctk.CTkLabel(self.frame_save,
-                                     text=os.path.basename(self.save_folder_path) or self.save_folder_path,
-                                     text_color="white", anchor="w")
+        self.lbl_save = ctk.CTkLabel(
+            self.frame_save,
+            text=os.path.basename(self.save_folder_path) or self.save_folder_path,
+            text_color="white",
+            anchor="w"
+        )
         self.lbl_save.pack(side="left", fill="x", expand=True, padx=5)
 
         # Кнопка Запуска
@@ -235,38 +235,29 @@ class SalesCheckerApp(ctk.CTk):
         )
         self.btn_run.pack(padx=25, pady=(15, 10), fill="x")
 
-        # Блок карточек статистики (вместо терминала)
+        # Блок карточек статистики
         self.stats_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.stats_frame.pack(fill="x", padx=25, pady=5)
 
-        # Карточка 1: Авто
+        # Карточка 1: Найдено потерь
         self.card_1 = ctk.CTkFrame(self.stats_frame, fg_color="#1e293b", corner_radius=8)
-        self.card_1.pack(side="left", fill="both", expand=True, padx=(0, 4), pady=5)
+        self.card_1.pack(side="left", fill="both", expand=True, padx=(0, 5), pady=5)
         self.card_1_val = ctk.CTkLabel(self.card_1, text="0", font=ctk.CTkFont(size=24, weight="bold"),
                                        text_color="#10b981")
         self.card_1_val.pack(pady=(8, 0))
         self.card_1_lbl = ctk.CTkLabel(self.card_1, text="", font=ctk.CTkFont(size=12), text_color="#94a3b8")
         self.card_1_lbl.pack(pady=(0, 8))
 
-        # Карточка 2: Кандидаты
-        self.card_2 = ctk.CTkFrame(self.stats_frame, fg_color="#1e293b", corner_radius=8)
-        self.card_2.pack(side="left", fill="both", expand=True, padx=4, pady=5)
-        self.card_2_val = ctk.CTkLabel(self.card_2, text="0", font=ctk.CTkFont(size=24, weight="bold"),
-                                       text_color="#f59e0b")
-        self.card_2_val.pack(pady=(8, 0))
-        self.card_2_lbl = ctk.CTkLabel(self.card_2, text="", font=ctk.CTkFont(size=12), text_color="#94a3b8")
-        self.card_2_lbl.pack(pady=(0, 8))
-
-        # Карточка 3: Всего в базе
+        # Карточка 2: Всего в базе
         self.card_3 = ctk.CTkFrame(self.stats_frame, fg_color="#1e293b", corner_radius=8)
-        self.card_3.pack(side="left", fill="both", expand=True, padx=(4, 0), pady=5)
+        self.card_3.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
         self.card_3_val = ctk.CTkLabel(self.card_3, text="0", font=ctk.CTkFont(size=24, weight="bold"),
                                        text_color="#38bdf8")
         self.card_3_val.pack(pady=(8, 0))
         self.card_3_lbl = ctk.CTkLabel(self.card_3, text="", font=ctk.CTkFont(size=12), text_color="#94a3b8")
         self.card_3_lbl.pack(pady=(0, 8))
 
-        # Кнопка "Открыть папку с результатами" (скрыта до завершения)
+        # Кнопка "Открыть папку с результатами"
         self.btn_open_folder = ctk.CTkButton(
             self,
             text="",
@@ -306,7 +297,6 @@ class SalesCheckerApp(ctk.CTk):
         self.btn_manual.configure(text=t["btn_manual"])
 
         self.card_1_lbl.configure(text=t["card_auto"])
-        self.card_2_lbl.configure(text=t["card_manual"])
         self.card_3_lbl.configure(text=t["card_total"])
 
         if not self.tg_path:
@@ -376,17 +366,14 @@ class SalesCheckerApp(ctk.CTk):
                 output_dir=self.save_folder_path
             )
 
-            # Обновляем виджеты карточек с анимацией значений
             self.card_1_val.configure(text=str(stats['auto_found']))
-            self.card_2_val.configure(text=str(stats['manual_candidates']))
             self.card_3_val.configure(text=str(stats['mega_base_total']))
 
-            # Показываем кнопку открытия папки
             self.btn_open_folder.pack(padx=25, pady=(0, 10), fill="x", before=self.btn_manual)
 
             messagebox.showinfo(
                 t["success_title"],
-                t["success_text"].format(auto=stats['auto_found'], manual=stats['manual_candidates'])
+                t["success_text"].format(auto=stats['auto_found'])
             )
         except Exception as e:
             messagebox.showerror("Error", str(e))
